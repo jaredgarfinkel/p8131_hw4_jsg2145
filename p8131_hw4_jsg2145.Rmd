@@ -24,3 +24,42 @@ scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
+```{r}
+df_low = tibble(
+  conx = rep(c("low", "high"), 3),
+  hous_tp = rep(c("tr_bk", "apt", "hous"), each = 2),
+  values = c(65, 34, 130, 141, 67, 130)
+) %>% 
+  mutate(sat = "low")
+
+df_med = tibble(
+  conx = rep(c("low", "high"), 3),
+  hous_tp = rep(c("tr_bk", "apt", "hous"), each = 2),
+  values = c(54, 47, 76, 116, 48, 105)
+) %>% 
+  mutate(sat = "med")
+
+df_high = tibble(
+  conx = rep(c("low", "high"), 3),
+  hous_tp = rep(c("tr_bk", "apt", "hous"), each = 2),
+  values = c(100, 100, 111, 191, 62, 104)
+) %>% 
+  mutate(sat = "high")
+
+df = union(df_low, df_med) %>% 
+  union(df_high) %>% 
+  pivot_wider(names_from = sat, values_from = values) %>% 
+  group_by(conx, hous_tp) %>% 
+  mutate(n = sum(low, med, high)) %>% 
+  summarize(low_pct = round(low/n*100, digits = 0),
+            med_pct = round(med/n*100, digits = 0),
+            high_pct = round(high/n*100, digits = 0)
+  ) %>% 
+  group_by(conx, hous_tp) %>% 
+  mutate(total = sum(low_pct, med_pct, high_pct))
+```
+
+```{r}
+df %>% knitr::kable()
+```
+
