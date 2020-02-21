@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(viridis)
+library(nnet)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -46,20 +47,19 @@ df_high = tibble(
 ) %>% 
   mutate(sat = "high")
 
-df_tidy = union(df_low, df_med) %>% 
+df_sum = union(df_low, df_med) %>% 
   union(df_high) %>% 
-  unnest()
-
-df_tbl = df_tidy %>% 
+  unnest() %>% 
   pivot_wider(names_from = sat, values_from = values) %>% 
   group_by(conx, hous_tp) %>% 
-  mutate(n = sum(low, med, high)) %>% 
+  mutate(n = sum(low, med, high))
+
+df_tbl = df_sum %>% 
+  group_by(conx, hous_tp) %>% 
   summarize(low_pct = round(low/n*100, digits = 0),
             med_pct = round(med/n*100, digits = 0),
             high_pct = round(high/n*100, digits = 0)
-  ) %>% 
-  group_by(conx, hous_tp) %>% 
-  mutate(total = sum(low_pct, med_pct, high_pct))
+  )
 ```
 
 ```{r}
@@ -68,7 +68,6 @@ df_tbl %>% knitr::kable()
 
 ```{r}
 df_tidy_tbl = df_tbl %>% 
-  select(-total) %>% 
   pivot_longer(cols = c(low_pct, med_pct, high_pct), names_to = "sat", values_to = "pct") %>% 
   ungroup() %>% 
   mutate(sat = str_remove(sat, "_pct$"),
@@ -86,3 +85,24 @@ df_tidy_tbl %>%
   facet_grid(hous_tp~conx)
 ```
 
+```{r}
+hagen.multi = multinom(cbind(low, med, high)~hous_tp+conx, data = df_sum)
+
+summary(hagen.multi)
+```
+
+```{r}
+pihat = predict(hagen.multi, type = "probs") 
+m = rowSums(df_sum[3:5])
+res.pearson = (df_sum[3:5] - pihat * m) / sqrt(pihat * m)
+```
+
+```{r}
+G.stat = sum(res.pearson ^ 2) # Generalized Pearson Chisq Stat
+G.stat
+pval = 1 - pchisq(G.stat, df = (6 - 4) * (3 - 1))
+pval
+```
+
+
+The p-value is `r pval`, so we do not reject the null, indicating the fit is acceptable.
