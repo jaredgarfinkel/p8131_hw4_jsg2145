@@ -46,8 +46,11 @@ df_high = tibble(
 ) %>% 
   mutate(sat = "high")
 
-df = union(df_low, df_med) %>% 
+df_tidy = union(df_low, df_med) %>% 
   union(df_high) %>% 
+  unnest()
+
+df_tbl = df_tidy %>% 
   pivot_wider(names_from = sat, values_from = values) %>% 
   group_by(conx, hous_tp) %>% 
   mutate(n = sum(low, med, high)) %>% 
@@ -60,6 +63,26 @@ df = union(df_low, df_med) %>%
 ```
 
 ```{r}
-df %>% knitr::kable()
+df_tbl %>% knitr::kable()
+```
+
+```{r}
+df_tidy_tbl = df_tbl %>% 
+  select(-total) %>% 
+  pivot_longer(cols = c(low_pct, med_pct, high_pct), names_to = "sat", values_to = "pct") %>% 
+  ungroup() %>% 
+  mutate(sat = str_remove(sat, "_pct$"),
+         sat = factor(sat, labels = c("low", "med", "high")),
+         conx = factor(conx, labels = c("low", "high")))  
+  
+```
+
+
+```{r}
+df_tidy_tbl %>% 
+  ggplot(aes(x = sat, y = pct)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Blues") +
+  facet_grid(hous_tp~conx)
 ```
 
