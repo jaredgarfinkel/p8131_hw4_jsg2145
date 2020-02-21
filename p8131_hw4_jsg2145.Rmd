@@ -31,7 +31,7 @@ df_low = tibble(
   hous_tp = rep(c("tr_bk", "apt", "hous"), each = 2),
   values = c(65, 34, 130, 141, 67, 130)
 ) %>% 
-  mutate(sat = "low")
+  mutate(sat = "low") 
 
 df_med = tibble(
   conx = rep(c("low", "high"), 3),
@@ -54,6 +54,7 @@ df_sum = union(df_low, df_med) %>%
   group_by(conx, hous_tp) %>% 
   mutate(n = sum(low, med, high))
 
+
 df_tbl = df_sum %>% 
   group_by(conx, hous_tp) %>% 
   summarize(low_pct = round(low/n*100, digits = 0),
@@ -72,8 +73,7 @@ df_tidy_tbl = df_tbl %>%
   ungroup() %>% 
   mutate(sat = str_remove(sat, "_pct$"),
          sat = factor(sat, labels = c("low", "med", "high")),
-         conx = factor(conx, labels = c("low", "high")))  
-  
+         conx = factor(conx, labels = c("low", "high")))
 ```
 
 
@@ -86,7 +86,7 @@ df_tidy_tbl %>%
 ```
 
 ```{r}
-hagen.multi = multinom(cbind(low, med, high)~hous_tp+conx, data = df_sum)
+hagen.multi = nnet::multinom(cbind(low, med, high) ~ conx + hous_tp, data = df_sum)
 
 summary(hagen.multi)
 ```
@@ -106,3 +106,11 @@ pval
 
 
 The p-value is `r pval`, so we do not reject the null, indicating the fit is acceptable.
+
+```{r}
+
+
+```
+
+There is a 
+
