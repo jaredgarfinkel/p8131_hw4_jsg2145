@@ -50,20 +50,42 @@ df_high = tibble(
 df_sum = union(df_low, df_med) %>% 
   union(df_high) %>% 
   unnest() %>% 
-  pivot_wider(names_from = sat, values_from = values) %>% 
-  group_by(conx, hous_tp) %>% 
-  mutate(n = sum(low, med, high))
+  pivot_wider(names_from = sat, values_from = values)
 
 df_tbl = df_sum %>% 
   group_by(conx, hous_tp) %>% 
+  mutate(n = sum(low, med, high)) %>% 
   summarize(low = low/n,
             med = med/n,
             high = high/n)
 ```
 
 ```{r}
-df_tbl %>% knitr::kable(digits = 2)
+df_conx = df_sum %>%
+  group_by(conx) %>% 
+  summarize(low = sum(low),
+            med = sum(med),
+            high = sum(high),
+            n = sum(low, med, high)) %>% 
+  group_by(conx) %>% 
+  summarize(low = low/n,
+            med = med/n,
+            high = high/n)
 ```
+
+```{r}
+df_hous_tp = df_sum %>%
+  group_by(hous_tp) %>% 
+  summarize(low = sum(low),
+            med = sum(med),
+            high = sum(high),
+            n = sum(low, med, high)) %>% 
+  group_by(hous_tp) %>% 
+  summarize(low = low/n,
+            med = med/n,
+            high = high/n)
+```
+
 
 ```{r}
 df_tidy_tbl = df_tbl %>% 
@@ -75,13 +97,27 @@ df_tidy_tbl = df_tbl %>%
 ```
 
 
-```{r}
+```{r, results = "hide"}
 df_tidy_tbl %>% 
   ggplot(aes(x = sat, y = pct)) +
   geom_col() +
-  scale_fill_brewer(palette = "Blues") +
   facet_grid(hous_tp~conx)
 ```
+
+```{r, results = "hide"}
+df_conx %>% 
+  pivot_longer(cols = low:high, names_to = "sat") %>% 
+  ggplot(aes(x = conx, y = value, fill = sat)) +
+  geom_bar(position = "dodge", stat = "identity")
+```
+
+```{r, results = "hide"}
+df_hous_tp %>% 
+  pivot_longer(cols = low:high, names_to = "sat") %>% 
+  ggplot(aes(x = hous_tp, y = value, fill = sat)) +
+  geom_bar(position = "dodge", stat = "identity")
+```
+
 
 ```{r}
 hagen.multi = nnet::multinom(cbind(low, med, high) ~ conx + hous_tp, data = df_sum)
@@ -151,6 +187,10 @@ We are 95% confident the log odds ratio of reporting high satisfaction compared 
 We are 95% confident the log odds ratio of reporting high satisfaction compared to low satisfaction will fall between `r filter(tidy.ci, sat == "high", par == "hous_tptr_bk") %>% pull(lower) %>% round(digits = 3)` and `r filter(tidy.ci, sat == "high", par == "hous_tptr_bk") %>% pull(upper) %>% round(digits = 3)` for people who live in tower blocks compared to those who live in apartments holding contact constant.
 
 ```{r}
-
+# proportional odds model
+df_tbl %>% 
+  group_by(conx, hous_tp) %>% 
+  mutate(log_odds = log(low/(med + high)),
+         log_odds2 = log((low + med)/high))
 ```
 
