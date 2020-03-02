@@ -188,6 +188,8 @@ We are 95% confident the log odds ratio of reporting high satisfaction compared 
 
 We are 95% confident the log odds ratio of reporting high satisfaction compared to low satisfaction will fall between `r filter(tidy.ci, sat == "high", par == "hous_tptr_bk") %>% pull(lower) %>% round(digits = 3)` and `r filter(tidy.ci, sat == "high", par == "hous_tptr_bk") %>% pull(upper) %>% round(digits = 3)` for people who live in tower blocks compared to those who live in apartments holding contact constant.
 
+## Part iii
+
 ```{r}
 # proportional odds model
 freq = df_sum %>%
@@ -211,7 +213,7 @@ The change in log odds of falling into a lower satisfaction category associated 
 
 The change in log odds of falling into a lower satisfaction category associated with living in a tower block is `r coef(df_polr) %>% broom::tidy() %>% filter(names == "hous_tptr_bk") %>% dplyr::select(x) %>% as.numeric() %>% round(digits = 3)` compared to those living in apartments holding level of contact constant.
 
-## Part iii
+## Part iv
 
 ```{r}
 # Pearson residuals for proportional odds model
@@ -222,7 +224,7 @@ m = df_sum %>%
   mutate(total = sum(low, med, high)) %>% 
   ungroup() %>% 
   dplyr::select(total) %>% 
-  as_vector()
+  simplify()
 res.pearson = (df_sum[,3:5] - pihat * m) / sqrt(pihat * m)
 G = sum(res.pearson^2)
 G
@@ -233,3 +235,12 @@ pval
 ```
 The p-value is `r round(pval, digits = 3)` (>0.05), indicating that the model is a good fit.
 
+```{r}
+## find the discrepancies
+
+bind_cols(df_sum, res.pearson) %>% 
+  dplyr::select(conx, hous_tp, low1:high1)
+```
+
+
+It appears that much of the discrepancy between the observed and expected models are in the low contact group and the group living in houses. However, there is also a high residual in the group with high contact living in the tower blocks.
