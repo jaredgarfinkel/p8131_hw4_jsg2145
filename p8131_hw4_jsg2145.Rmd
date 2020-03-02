@@ -2,7 +2,7 @@
 title: "p8131_hw4_jsg2145"
 author: "Jared Garfinkel"
 date: "2/20/2020"
-output: github_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
